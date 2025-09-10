@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const isActive = searchParams.get('isActive')
 
-    const where: any = {}
+    const where: Prisma.ConsumerWhereInput = {}
     if (isActive !== null) {
       where.isActive = isActive === 'true'
     }

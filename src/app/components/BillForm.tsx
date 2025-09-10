@@ -45,14 +45,14 @@ import { cn } from '@/lib/utils'
 const billSchema = z.object({
   consumerId: z.string().min(1, 'Consumer is required'),
   mealType: z.enum(['BREAKFAST', 'LUNCH', 'DINNER'], {
-    required_error: 'Meal type is required',
+    message: 'Meal type is required',
   }),
   amount: z.string().min(1, 'Amount is required').refine(
     (val) => !isNaN(Number(val)) && Number(val) > 0,
     'Amount must be a positive number'
   ),
   date: z.date({
-    required_error: 'Date is required',
+    message: 'Date is required',
   }),
 })
 
@@ -66,6 +66,15 @@ interface Consumer {
   isActive: boolean
 }
 
+interface BillData {
+  id: string
+  consumerId: string
+  consumer?: Consumer
+  mealType: 'BREAKFAST' | 'LUNCH' | 'DINNER'
+  amount: number
+  date: string
+}
+
 const MEAL_TYPES = [
   { value: 'BREAKFAST', label: 'Breakfast' },
   { value: 'LUNCH', label: 'Lunch' },
@@ -74,7 +83,7 @@ const MEAL_TYPES = [
 
 interface BillFormProps {
   onSubmit: () => void
-  initialData?: any
+  initialData?: BillData
   isEditing?: boolean
 }
 
@@ -130,7 +139,7 @@ export default function BillForm({ onSubmit, initialData, isEditing = false }: B
     setShowConfirmation(false)
 
     try {
-      const url = isEditing ? `/api/bills/${initialData.id}` : '/api/bills'
+      const url = isEditing ? `/api/bills/${initialData?.id}` : '/api/bills'
       const method = isEditing ? 'PUT' : 'POST'
 
       const response = await fetch(url, {

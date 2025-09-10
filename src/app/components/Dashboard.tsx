@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
 import { Calendar, DollarSign, Users, Utensils } from 'lucide-react'
 
@@ -36,7 +36,6 @@ interface SummaryData {
   endDate: string
 }
 
-const CONSUMERS = ['all']
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
 
 export default function Dashboard() {
@@ -58,7 +57,7 @@ export default function Dashboard() {
     }
   }
 
-  const fetchSummary = async () => {
+  const fetchSummary = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       params.append('period', selectedPeriod)
@@ -77,7 +76,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedPeriod, selectedConsumer])
 
   useEffect(() => {
     fetchConsumers()
@@ -85,7 +84,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchSummary()
-  }, [selectedPeriod, selectedConsumer])
+  }, [fetchSummary])
 
   if (loading) {
     return <div className="text-center py-8">Loading dashboard...</div>

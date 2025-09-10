@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Get total bills count
     const totalBills = await prisma.bill.count()
@@ -32,7 +32,11 @@ export async function GET(request: NextRequest) {
       },
       select: {
         id: true,
-        consumerName: true,
+        consumer: {
+          select: {
+            name: true
+          }
+        },
         mealType: true,
         amount: true,
         date: true,

@@ -30,7 +30,7 @@ const consumerSchema = z.object({
   name: z.string().min(1, 'Name is required').max(100, 'Name must be less than 100 characters'),
   email: z.string().email('Invalid email address').optional().or(z.literal('')),
   phone: z.string().optional().or(z.literal('')),
-  isActive: z.boolean().default(true),
+  isActive: z.boolean(),
 })
 
 type ConsumerFormData = z.infer<typeof consumerSchema>

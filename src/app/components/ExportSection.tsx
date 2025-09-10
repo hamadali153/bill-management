@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Download, FileText, FileSpreadsheet, Calendar as CalendarIcon } from 'lucide-react'
+import { FileText, FileSpreadsheet, Calendar as CalendarIcon } from 'lucide-react'
 import * as Papa from 'papaparse'
 import jsPDF from 'jspdf'
 
@@ -356,7 +356,7 @@ export default function ExportSection() {
         <div className="text-sm text-muted-foreground space-y-1">
           <p>• CSV export includes detailed bills and consumer subtotals</p>
           <p>• PDF export provides a formatted report with summary breakdown</p>
-          <p>• Filter by consumer to get individual reports or select "All" for complete summary</p>
+          <p>• Filter by consumer to get individual reports or select &quot;All&quot; for complete summary</p>
         </div>
       </CardContent>
     </Card>

@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
-import { Edit, Trash2, Filter } from 'lucide-react'
+import { Edit, Trash2 } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -47,7 +47,6 @@ interface Bill {
   updatedAt: string
 }
 
-const CONSUMERS = ['all']
 const MEAL_TYPES = [
   { value: 'all', label: 'All Meals' },
   { value: 'BREAKFAST', label: 'Breakfast' },
@@ -69,7 +68,6 @@ const getMealBadgeColor = (mealType: string) => {
 }
 
 export default function BillsList() {
-  const [bills, setBills] = useState<Bill[]>([])
   const [filteredBills, setFilteredBills] = useState<Bill[]>([])
   const [consumers, setConsumers] = useState<Array<{id: string, name: string}>>([])
   const [loading, setLoading] = useState(true)
@@ -90,7 +88,7 @@ export default function BillsList() {
     }
   }
 
-  const fetchBills = async () => {
+  const fetchBills = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (selectedConsumer !== 'all') params.append('consumerName', selectedConsumer)
@@ -100,7 +98,6 @@ export default function BillsList() {
       if (!response.ok) throw new Error('Failed to fetch bills')
 
       const data = await response.json()
-      setBills(data)
       setFilteredBills(data)
     } catch (error) {
       console.error('Error fetching bills:', error)
@@ -108,7 +105,7 @@ export default function BillsList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedConsumer, selectedMealType])
 
   useEffect(() => {
     fetchConsumers()
@@ -116,7 +113,7 @@ export default function BillsList() {
 
   useEffect(() => {
     fetchBills()
-  }, [selectedConsumer, selectedMealType])
+  }, [fetchBills])
 
   const handleEdit = (bill: Bill) => {
     setEditingBill(bill)

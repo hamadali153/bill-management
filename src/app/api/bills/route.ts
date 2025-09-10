@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { MealType } from '@prisma/client'
+import { MealType, Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const startDate = searchParams.get('startDate')
     const endDate = searchParams.get('endDate')
 
-    const where: any = {}
+    const where: Prisma.BillWhereInput = {}
 
     if (consumerName && consumerName !== 'all') {
       where.consumer = {

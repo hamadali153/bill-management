@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { Edit, Trash2, UserPlus, Eye, EyeOff } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
@@ -49,7 +49,6 @@ const STATUS_FILTERS = [
 ]
 
 export default function ConsumerList() {
-  const [consumers, setConsumers] = useState<Consumer[]>([])
   const [filteredConsumers, setFilteredConsumers] = useState<Consumer[]>([])
   const [loading, setLoading] = useState(true)
   const [statusFilter, setStatusFilter] = useState('all')
@@ -57,7 +56,7 @@ export default function ConsumerList() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
-  const fetchConsumers = async () => {
+  const fetchConsumers = useCallback(async () => {
     try {
       const params = new URLSearchParams()
       if (statusFilter === 'active') {
@@ -70,7 +69,6 @@ export default function ConsumerList() {
       if (!response.ok) throw new Error('Failed to fetch consumers')
 
       const data = await response.json()
-      setConsumers(data)
       setFilteredConsumers(data)
     } catch (error) {
       console.error('Error fetching consumers:', error)
@@ -78,11 +76,11 @@ export default function ConsumerList() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [statusFilter])
 
   useEffect(() => {
     fetchConsumers()
-  }, [statusFilter])
+  }, [fetchConsumers])
 
   const handleEdit = (consumer: Consumer) => {
     setEditingConsumer(consumer)
@@ -267,7 +265,7 @@ export default function ConsumerList() {
                           size="icon"
                           onClick={() => handleDelete(consumer.id)}
                           className="text-destructive hover:text-destructive"
-                          disabled={consumer._count?.bills && consumer._count.bills > 0}
+                          disabled={Boolean(consumer._count?.bills && consumer._count.bills > 0)}
                           title={
                             consumer._count?.bills && consumer._count.bills > 0
                               ? 'Cannot delete consumer with bills'
