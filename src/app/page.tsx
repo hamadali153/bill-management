@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { LogOut } from 'lucide-react'
 import BillForm from './components/BillForm'
 import BillsList from './components/BillsList'
 import Dashboard from './components/Dashboard'
@@ -18,14 +20,33 @@ export default function Home() {
     setRefreshKey(prev => prev + 1)
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('bill-management-auth')
+    window.location.reload()
+  }
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="text-center space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Office Bill Management System</h1>
-        <p className="text-muted-foreground">
-          Track and manage breakfast, lunch, and dinner expenses for your office
-        </p>
+        <div className="flex justify-between items-center">
+          <div></div>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Office Bill Management System</h1>
+            <p className="text-muted-foreground">
+              Track and manage breakfast, lunch, and dinner expenses for your office
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
+        </div>
         <div className="flex justify-center gap-2">
           <Badge variant="secondary">Hamad</Badge>
           <Badge variant="secondary">Muneer</Badge>
