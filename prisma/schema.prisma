@@ -1,0 +1,44 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Consumer {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  email     String?
+  phone     String?
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  bills Bill[]
+
+  @@map("consumers")
+}
+
+model Bill {
+  id          String   @id @default(cuid())
+  consumerId  String   @map("consumer_id")
+  consumer    Consumer @relation(fields: [consumerId], references: [id], onDelete: Cascade)
+  mealType    MealType @map("meal_type")
+  amount      Decimal  @db.Decimal(10, 2)
+  date        DateTime @db.Date
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("bills")
+}
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
