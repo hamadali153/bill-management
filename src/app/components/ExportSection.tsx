@@ -50,11 +50,11 @@ export default function ExportSection() {
     }
 
     if (startDate) {
-      params.append('startDate', startDate.toISOString())
+      params.append('startDate', `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`)
     }
 
     if (endDate) {
-      params.append('endDate', endDate.toISOString())
+      params.append('endDate', `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`)
     }
 
     const response = await fetch(`/api/bills?${params.toString()}`)

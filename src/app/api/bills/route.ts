@@ -23,9 +23,13 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate && endDate) {
+      // Parse date strings and create proper date objects
+      const [startYear, startMonth, startDay] = startDate.split('-').map(Number)
+      const [endYear, endMonth, endDay] = endDate.split('-').map(Number)
+      
       where.date = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
+        gte: new Date(startYear, startMonth - 1, startDay),
+        lte: new Date(endYear, endMonth - 1, endDay)
       }
     }
 
@@ -74,12 +78,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Parse the date string and create a proper date without timezone issues
+    // Use the date string directly to avoid any timezone conversion
+    const normalizedDate = new Date(date + 'T12:00:00Z') // Add noon UTC to avoid timezone issues
+    
     const bill = await prisma.bill.create({
       data: {
         consumerId,
         mealType: mealType as MealType,
         amount: parseFloat(amount),
-        date: new Date(date)
+        date: normalizedDate
       },
       include: {
         consumer: true

@@ -13,9 +13,12 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
 
   useEffect(() => {
     // Check if user is already authenticated (session stored in localStorage)
-    const authStatus = localStorage.getItem('bill-management-auth')
-    if (authStatus === 'authenticated') {
-      setIsAuthenticated(true)
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      const authStatus = localStorage.getItem('bill-management-auth')
+      if (authStatus === 'authenticated') {
+        setIsAuthenticated(true)
+      }
     }
     setIsLoading(false)
   }, [])

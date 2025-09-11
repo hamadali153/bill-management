@@ -128,6 +128,9 @@ export default function BillForm({ onSubmit, initialData, isEditing = false }: B
   }, [])
 
   const handleFormSubmit = (data: BillFormData) => {
+    console.log('Form submitted with data:', data)
+    console.log('Date value:', data.date)
+    console.log('Date type:', typeof data.date)
     setPendingData(data)
     setShowConfirmation(true)
   }
@@ -142,6 +145,17 @@ export default function BillForm({ onSubmit, initialData, isEditing = false }: B
       const url = isEditing ? `/api/bills/${initialData?.id}` : '/api/bills'
       const method = isEditing ? 'PUT' : 'POST'
 
+      const dateString = `${pendingData.date.getFullYear()}-${String(pendingData.date.getMonth() + 1).padStart(2, '0')}-${String(pendingData.date.getDate()).padStart(2, '0')}`
+      
+      // Debug logging
+      console.log('Original date from picker:', pendingData.date)
+      console.log('Date components:', {
+        year: pendingData.date.getFullYear(),
+        month: pendingData.date.getMonth() + 1,
+        day: pendingData.date.getDate()
+      })
+      console.log('Date string being sent:', dateString)
+
       const response = await fetch(url, {
         method,
         headers: {
@@ -151,7 +165,7 @@ export default function BillForm({ onSubmit, initialData, isEditing = false }: B
           consumerId: pendingData.consumerId,
           mealType: pendingData.mealType,
           amount: parseFloat(pendingData.amount),
-          date: pendingData.date.toISOString(),
+          date: dateString,
         }),
       })
 
@@ -285,7 +299,11 @@ export default function BillForm({ onSubmit, initialData, isEditing = false }: B
                       <Calendar
                         mode="single"
                         selected={field.value}
-                        onSelect={field.onChange}
+                        onSelect={(date) => {
+                          console.log('Date selected:', date)
+                          console.log('Date type:', typeof date)
+                          field.onChange(date)
+                        }}
                         disabled={(date) =>
                           date > new Date() || date < new Date('1900-01-01')
                         }
