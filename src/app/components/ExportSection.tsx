@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { format } from 'date-fns'
+import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subWeeks, subMonths } from 'date-fns'
 import { FileText, FileSpreadsheet, Calendar as CalendarIcon } from 'lucide-react'
 import * as Papa from 'papaparse'
 import jsPDF from 'jspdf'
@@ -34,13 +34,70 @@ interface Bill {
   updatedAt: string
 }
 
-const CONSUMERS = ['all', 'Hamad', 'Muneer', 'Ameer']
+interface Consumer { id: string; name: string }
 
 export default function ExportSection() {
   const [selectedConsumer, setSelectedConsumer] = useState('all')
   const [startDate, setStartDate] = useState<Date>()
   const [endDate, setEndDate] = useState<Date>()
   const [isExporting, setIsExporting] = useState(false)
+  const [dateRangeType, setDateRangeType] = useState<'all' | 'today' | 'thisWeek' | 'lastWeek' | 'thisMonth' | 'lastMonth' | 'custom'>('all')
+  const [consumers, setConsumers] = useState<Consumer[]>([])
+
+  // Load consumers from API to match exact names used in DB
+  // so filtering by consumer returns results
+  if (typeof window !== 'undefined' && consumers.length === 0) {
+    fetch('/api/consumers')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: any[]) => {
+        setConsumers(data.map((c) => ({ id: c.id, name: c.name })))
+      })
+      .catch(() => {})
+  }
+
+  const applyPresetRange = (preset: typeof dateRangeType) => {
+    const today = new Date()
+    switch (preset) {
+      case 'today':
+        setStartDate(today)
+        setEndDate(today)
+        break
+      case 'thisWeek': {
+        const s = startOfWeek(today, { weekStartsOn: 1 })
+        const e = endOfWeek(today, { weekStartsOn: 1 })
+        setStartDate(s)
+        setEndDate(e)
+        break
+      }
+      case 'lastWeek': {
+        const lastWeekDate = subWeeks(today, 1)
+        const s = startOfWeek(lastWeekDate, { weekStartsOn: 1 })
+        const e = endOfWeek(lastWeekDate, { weekStartsOn: 1 })
+        setStartDate(s)
+        setEndDate(e)
+        break
+      }
+      case 'thisMonth': {
+        setStartDate(startOfMonth(today))
+        setEndDate(endOfMonth(today))
+        break
+      }
+      case 'lastMonth': {
+        const lastMonthDate = subMonths(today, 1)
+        setStartDate(startOfMonth(lastMonthDate))
+        setEndDate(endOfMonth(lastMonthDate))
+        break
+      }
+      case 'all':
+        setStartDate(undefined)
+        setEndDate(undefined)
+        break
+      case 'custom':
+      default:
+        // Do not change dates; user will pick manually
+        break
+    }
+  }
 
   const fetchBillsForExport = async (): Promise<Bill[]> => {
     const params = new URLSearchParams()
@@ -60,10 +117,21 @@ export default function ExportSection() {
     const response = await fetch(`/api/bills?${params.toString()}`)
     if (!response.ok) throw new Error('Failed to fetch bills')
 
-    return response.json()
+    const data = await response.json()
+    // Normalize API response to the Bill shape this component expects
+    return (data as any[]).map((b) => ({
+      id: b.id,
+      consumerName: b.consumer?.name ?? b.consumerName ?? '',
+      mealType: b.mealType,
+      amount: Number(b.amount),
+      date: b.date,
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt,
+    }))
   }
 
   const calculateSubtotals = (bills: Bill[]) => {
+    type MealKey = 'BREAKFAST' | 'LUNCH' | 'DINNER'
     const subtotals = bills.reduce((acc, bill) => {
       if (!acc[bill.consumerName]) {
         acc[bill.consumerName] = {
@@ -74,7 +142,10 @@ export default function ExportSection() {
       }
       acc[bill.consumerName].total += Number(bill.amount)
       acc[bill.consumerName].count += 1
-      acc[bill.consumerName].breakdown[bill.mealType as keyof typeof acc[string]['breakdown']] += Number(bill.amount)
+      const mealKey = (bill.mealType as MealKey)
+      if (mealKey in acc[bill.consumerName].breakdown) {
+        acc[bill.consumerName].breakdown[mealKey as MealKey] += Number(bill.amount)
+      }
       return acc
     }, {} as Record<string, { total: number; count: number; breakdown: Record<string, number> }>)
 
@@ -260,7 +331,7 @@ export default function ExportSection() {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Filter Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="space-y-2">
             <Label>Consumer</Label>
             <Select value={selectedConsumer} onValueChange={setSelectedConsumer}>
@@ -268,11 +339,37 @@ export default function ExportSection() {
                 <SelectValue placeholder="Select consumer" />
               </SelectTrigger>
               <SelectContent>
-                {CONSUMERS.map((consumer) => (
-                  <SelectItem key={consumer} value={consumer}>
-                    {consumer === 'all' ? 'All Consumers' : consumer}
+                <SelectItem value="all">All Consumers</SelectItem>
+                {consumers.map((c) => (
+                  <SelectItem key={c.id} value={c.name}>
+                    {c.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Date Range</Label>
+            <Select
+              value={dateRangeType}
+              onValueChange={(v) => {
+                const preset = v as typeof dateRangeType
+                setDateRangeType(preset)
+                applyPresetRange(preset)
+              }}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="thisWeek">This Week</SelectItem>
+                <SelectItem value="lastWeek">Last Week</SelectItem>
+                <SelectItem value="thisMonth">This Month</SelectItem>
+                <SelectItem value="lastMonth">Last Month</SelectItem>
+                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -287,6 +384,7 @@ export default function ExportSection() {
                     'w-full justify-start text-left font-normal',
                     !startDate && 'text-muted-foreground'
                   )}
+                  disabled={dateRangeType !== 'custom'}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {startDate ? format(startDate, 'PPP') : 'Pick start date'}
@@ -296,7 +394,7 @@ export default function ExportSection() {
                 <Calendar
                   mode="single"
                   selected={startDate}
-                  onSelect={setStartDate}
+                  onSelect={(d) => setStartDate(d)}
                   initialFocus
                 />
               </PopoverContent>
@@ -313,6 +411,7 @@ export default function ExportSection() {
                     'w-full justify-start text-left font-normal',
                     !endDate && 'text-muted-foreground'
                   )}
+                  disabled={dateRangeType !== 'custom'}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {endDate ? format(endDate, 'PPP') : 'Pick end date'}
@@ -322,7 +421,7 @@ export default function ExportSection() {
                 <Calendar
                   mode="single"
                   selected={endDate}
-                  onSelect={setEndDate}
+                  onSelect={(d) => setEndDate(d)}
                   initialFocus
                 />
               </PopoverContent>
