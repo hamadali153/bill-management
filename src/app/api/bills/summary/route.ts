@@ -1,15 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-
-interface SummaryWhere {
-  date: {
-    gte: Date
-    lte: Date
-  }
-  consumer?: {
-    name: string
-  }
-}
+import type { Prisma } from '@prisma/client'
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +23,7 @@ export async function GET(request: NextRequest) {
       startDate = null
     }
 
-    const where: any = {}
+    const where: Prisma.BillWhereInput = {}
     // Make the upper bound exclusive to avoid timezone off-by-one-day issues
     const endExclusive = new Date(effectiveEnd)
     endExclusive.setDate(endExclusive.getDate() + 1)

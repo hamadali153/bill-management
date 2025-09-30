@@ -36,6 +36,25 @@ interface Bill {
 
 interface Consumer { id: string; name: string }
 
+type ApiBill = {
+  id?: unknown
+  consumer?: { name?: unknown } | null
+  consumerName?: unknown
+  mealType?: unknown
+  amount?: unknown
+  date?: unknown
+  createdAt?: unknown
+  updatedAt?: unknown
+}
+
+function asString(value: unknown): string {
+  return typeof value === 'string' ? value : String(value ?? '')
+}
+
+function asNumber(value: unknown): number {
+  return typeof value === 'number' ? value : Number(value ?? 0)
+}
+
 export default function ExportSection() {
   const [selectedConsumer, setSelectedConsumer] = useState('all')
   const [startDate, setStartDate] = useState<Date>()
@@ -49,8 +68,9 @@ export default function ExportSection() {
   if (typeof window !== 'undefined' && consumers.length === 0) {
     fetch('/api/consumers')
       .then((r) => r.ok ? r.json() : [])
-      .then((data: any[]) => {
-        setConsumers(data.map((c) => ({ id: c.id, name: c.name })))
+      .then((data: unknown) => {
+        const list = Array.isArray(data) ? (data as Array<{ id: unknown; name: unknown }>) : []
+        setConsumers(list.map((c) => ({ id: asString(c.id), name: asString(c.name) })))
       })
       .catch(() => {})
   }
@@ -117,16 +137,17 @@ export default function ExportSection() {
     const response = await fetch(`/api/bills?${params.toString()}`)
     if (!response.ok) throw new Error('Failed to fetch bills')
 
-    const data = await response.json()
+    const data: unknown = await response.json()
     // Normalize API response to the Bill shape this component expects
-    return (data as any[]).map((b) => ({
-      id: b.id,
-      consumerName: b.consumer?.name ?? b.consumerName ?? '',
-      mealType: b.mealType,
-      amount: Number(b.amount),
-      date: b.date,
-      createdAt: b.createdAt,
-      updatedAt: b.updatedAt,
+    const list: ApiBill[] = Array.isArray(data) ? (data as ApiBill[]) : []
+    return list.map((b): Bill => ({
+      id: asString(b.id),
+      consumerName: asString(b.consumer?.name ?? b.consumerName ?? ''),
+      mealType: asString(b.mealType),
+      amount: asNumber(b.amount),
+      date: asString(b.date),
+      createdAt: asString(b.createdAt),
+      updatedAt: asString(b.updatedAt),
     }))
   }
 

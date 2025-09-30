@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
+import type { DateRange } from 'react-day-picker'
 import { format } from 'date-fns'
 
 interface SummaryData {
@@ -48,7 +49,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState('monthly')
   const [selectedConsumer, setSelectedConsumer] = useState('all')
-  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({})
+  const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const fetchConsumers = async () => {
     try {
@@ -71,7 +72,7 @@ export default function Dashboard() {
       }
 
       if (selectedPeriod === 'custom') {
-        if (!dateRange.from || !dateRange.to) {
+        if (!dateRange?.from || !dateRange?.to) {
           return
         }
         params.append('startDate', dateRange.from.toISOString())
@@ -145,7 +146,7 @@ export default function Dashboard() {
                 className="w-full sm:w-64 justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {dateRange.from && dateRange.to
+                {dateRange?.from && dateRange?.to
                   ? `${format(dateRange.from, 'LLL d, y')} - ${format(dateRange.to, 'LLL d, y')}`
                   : 'Pick a date range'}
               </Button>
@@ -154,8 +155,8 @@ export default function Dashboard() {
               <Calendar
                 mode="range"
                 numberOfMonths={2}
-                selected={dateRange as any}
-                onSelect={(range) => setDateRange(range || {})}
+                selected={dateRange}
+                onSelect={(range) => setDateRange(range)}
               />
             </PopoverContent>
           </Popover>
