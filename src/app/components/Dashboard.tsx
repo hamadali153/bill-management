@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { Calendar, DollarSign, Users, Utensils } from 'lucide-react'
+import { Calendar as CalendarIcon, DollarSign, Users, Utensils } from 'lucide-react'
 
 import {
   Select,
@@ -13,6 +13,10 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Button } from '@/components/ui/button'
+import { Calendar } from '@/components/ui/calendar'
+import { format } from 'date-fns'
 
 interface SummaryData {
   totalByConsumer: Array<{
@@ -44,6 +48,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [selectedPeriod, setSelectedPeriod] = useState('monthly')
   const [selectedConsumer, setSelectedConsumer] = useState('all')
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({})
 
   const fetchConsumers = async () => {
     try {
@@ -65,6 +70,14 @@ export default function Dashboard() {
         params.append('consumerName', selectedConsumer)
       }
 
+      if (selectedPeriod === 'custom') {
+        if (!dateRange.from || !dateRange.to) {
+          return
+        }
+        params.append('startDate', dateRange.from.toISOString())
+        params.append('endDate', dateRange.to.toISOString())
+      }
+
       const response = await fetch(`/api/bills/summary?${params.toString()}`)
       if (!response.ok) throw new Error('Failed to fetch summary')
 
@@ -76,7 +89,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [selectedPeriod, selectedConsumer])
+  }, [selectedPeriod, selectedConsumer, dateRange])
 
   useEffect(() => {
     fetchConsumers()
@@ -119,8 +132,34 @@ export default function Dashboard() {
           <SelectContent>
             <SelectItem value="weekly">This Week</SelectItem>
             <SelectItem value="monthly">This Month</SelectItem>
+            <SelectItem value="custom">Custom</SelectItem>
+            <SelectItem value="all">All Time</SelectItem>
           </SelectContent>
         </Select>
+
+        {selectedPeriod === 'custom' && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="w-full sm:w-64 justify-start text-left font-normal"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange.from && dateRange.to
+                  ? `${format(dateRange.from, 'LLL d, y')} - ${format(dateRange.to, 'LLL d, y')}`
+                  : 'Pick a date range'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="range"
+                numberOfMonths={2}
+                selected={dateRange as any}
+                onSelect={(range) => setDateRange(range || {})}
+              />
+            </PopoverContent>
+          </Popover>
+        )}
 
         <Select value={selectedConsumer} onValueChange={setSelectedConsumer}>
           <SelectTrigger className="w-full sm:w-40">
@@ -168,7 +207,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Average per Bill</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">

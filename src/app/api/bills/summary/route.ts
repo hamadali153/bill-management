@@ -14,23 +14,39 @@ interface SummaryWhere {
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const period = searchParams.get('period') || 'monthly' // weekly, monthly
+    const period = searchParams.get('period') || 'monthly' // weekly, monthly, custom, all
     const consumerName = searchParams.get('consumerName')
+    const startDateParam = searchParams.get('startDate')
+    const endDateParam = searchParams.get('endDate')
 
-    const now = new Date()
-    let startDate: Date
+    const effectiveEnd = endDateParam ? new Date(endDateParam) : new Date()
+    let startDate: Date | null = null
 
     if (period === 'weekly') {
-      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    } else {
-      startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = new Date(effectiveEnd.getTime() - 7 * 24 * 60 * 60 * 1000)
+    } else if (period === 'monthly') {
+      startDate = new Date(effectiveEnd.getFullYear(), effectiveEnd.getMonth(), 1)
+    } else if (period === 'custom') {
+      startDate = startDateParam ? new Date(startDateParam) : null
+    } else if (period === 'all') {
+      startDate = null
     }
 
-    const where: SummaryWhere = {
-      date: {
+    const where: any = {}
+    // Make the upper bound exclusive to avoid timezone off-by-one-day issues
+    const endExclusive = new Date(effectiveEnd)
+    endExclusive.setDate(endExclusive.getDate() + 1)
+    if (startDate) {
+      where.date = {
         gte: startDate,
-        lte: now
+        lt: endExclusive
       }
+    } else if (period !== 'custom' && period !== 'monthly' && period !== 'weekly') {
+      // 'all' case: no date filter
+    } else {
+      // if custom without valid dates, default to last 30 days to avoid huge queries
+      const fallbackStart = new Date(effectiveEnd.getTime() - 30 * 24 * 60 * 60 * 1000)
+      where.date = { gte: fallbackStart, lt: endExclusive }
     }
 
     if (consumerName && consumerName !== 'all') {
@@ -126,8 +142,8 @@ export async function GET(request: NextRequest) {
       dailyTotals,
       grandTotal,
       period,
-      startDate: startDate.toISOString(),
-      endDate: now.toISOString()
+      startDate: startDate ? startDate.toISOString() : null,
+      endDate: effectiveEnd.toISOString()
     })
   } catch (error) {
     console.error('Error fetching summary:', error)
